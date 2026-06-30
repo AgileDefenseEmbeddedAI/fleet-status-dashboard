@@ -1,27 +1,66 @@
-import { useState, useMemo } from 'react';
+import { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { Asset, FilterState } from './types';
-import { mockFleet, ALL_TYPES, ALL_STATUSES } from './data/mockFleet';
+import { ALL_TYPES, ALL_STATUSES } from './data/constants';
 import { FilterBar } from './components/FilterBar';
 import { AssetList } from './components/AssetList';
-import { MapView } from './components/MapView';
 import { StatsBar } from './components/StatsBar';
+
+const MapView = lazy(() =>
+  import('./components/MapView').then((m) => ({ default: m.MapView }))
+);
 
 const DEFAULT_FILTERS: FilterState = {
   types: [...ALL_TYPES],
   statuses: [...ALL_STATUSES],
 };
 
+function MapFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-gray-100">
+      <div className="text-center text-gray-500">
+        <div className="text-3xl mb-2">🗺</div>
+        <p className="text-sm">Loading map…</p>
+      </div>
+    </div>
+  );
+}
+
+function PerfBadge({ ms }: { ms: number }) {
+  const secs = (ms / 1000).toFixed(2);
+  const color =
+    ms < 3000 ? 'text-green-400' : ms < 5000 ? 'text-yellow-400' : 'text-red-400';
+  return (
+    <span className={`text-xs font-mono ${color}`} title="Time to first render">
+      ⚡ {secs}s
+    </span>
+  );
+}
+
 export default function App() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [view, setView] = useState<'split' | 'map' | 'list'>('split');
+  const [fleet, setFleet] = useState<Asset[]>([]);
+  const [renderTimeMs, setRenderTimeMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    const t = Math.round(performance.now());
+    setRenderTimeMs(t);
+    console.log(`[Fleet Dashboard] Initial render: ${t}ms from navigation start`);
+
+    import('./data/mockFleet').then(({ mockFleet }) => {
+      setFleet(mockFleet);
+      const t2 = Math.round(performance.now());
+      console.log(`[Fleet Dashboard] Fleet data loaded: ${t2}ms (${t2 - t}ms after render)`);
+    });
+  }, []);
 
   const filteredAssets = useMemo(
     () =>
-      mockFleet.filter(
+      fleet.filter(
         (a) => filters.types.includes(a.type) && filters.statuses.includes(a.status)
       ),
-    [filters]
+    [fleet, filters]
   );
 
   function handleSelectAsset(asset: Asset) {
@@ -37,7 +76,9 @@ export default function App() {
           <span className="text-gray-400 text-sm hidden sm:block">Real-time asset monitoring</span>
         </div>
         <div className="flex items-center gap-4">
-          <StatsBar allAssets={mockFleet} />
+          <StatsBar allAssets={fleet} />
+          <div className="h-5 w-px bg-gray-600" />
+          {renderTimeMs !== null && <PerfBadge ms={renderTimeMs} />}
           <div className="h-5 w-px bg-gray-600" />
           {/* View toggle */}
           <div className="flex rounded-lg overflow-hidden border border-gray-600">
@@ -60,7 +101,7 @@ export default function App() {
       <FilterBar
         filters={filters}
         onChange={setFilters}
-        totalCount={mockFleet.length}
+        totalCount={fleet.length}
         filteredCount={filteredAssets.length}
       />
 
@@ -89,11 +130,13 @@ export default function App() {
         {/* Map panel */}
         {(view === 'split' || view === 'map') && (
           <div className="flex-1 relative">
-            <MapView
-              assets={filteredAssets}
-              selectedAsset={selectedAsset}
-              onSelect={handleSelectAsset}
-            />
+            <Suspense fallback={<MapFallback />}>
+              <MapView
+                assets={filteredAssets}
+                selectedAsset={selectedAsset}
+                onSelect={handleSelectAsset}
+              />
+            </Suspense>
             {/* Selected asset detail overlay */}
             {selectedAsset && (
               <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-lg p-4 min-w-[220px] z-[1000]">

@@ -1,5 +1,5 @@
 import { Asset, AssetStatus } from '../types';
-import { ALL_STATUSES } from '../data/mockFleet';
+import { ALL_STATUSES } from '../data/constants';
 
 const STATUS_LABELS: Record<AssetStatus, string> = {
   active: 'Active',
