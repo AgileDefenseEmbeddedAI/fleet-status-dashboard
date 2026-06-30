@@ -8,7 +8,7 @@ import { Asset, AssetStatus } from '../types';
 const STATUS_COLORS: Record<AssetStatus, string> = {
   active: '#22c55e',
   idle: '#eab308',
-  maintenance: '#3b82f6',
+  maintenance: '#f97316',
   offline: '#ef4444',
 };
 
@@ -18,9 +18,14 @@ const TYPE_SYMBOLS: Record<string, string> = {
   airplane: '✈️',
 };
 
-function createMarkerIcon(asset: Asset): L.DivIcon {
+function createMarkerIcon(asset: Asset, selected: boolean): L.DivIcon {
   const color = STATUS_COLORS[asset.status];
   const symbol = TYPE_SYMBOLS[asset.type] ?? '●';
+  const size = selected ? 46 : 36;
+  const borderWidth = selected ? 4 : 3;
+  const shadow = selected
+    ? `0 0 0 4px ${color}40, 0 4px 12px rgba(0,0,0,0.35)`
+    : '0 2px 6px rgba(0,0,0,0.25)';
   return L.divIcon({
     className: '',
     html: `
@@ -28,21 +33,22 @@ function createMarkerIcon(asset: Asset): L.DivIcon {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: ${size}px;
+        height: ${size}px;
         border-radius: 50%;
         background: white;
-        border: 3px solid ${color};
-        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-        font-size: 16px;
+        border: ${borderWidth}px solid ${color};
+        box-shadow: ${shadow};
+        font-size: ${selected ? 20 : 16}px;
         cursor: pointer;
+        transition: all 0.2s;
       ">
         ${symbol}
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2 - 4],
   });
 }
 
@@ -79,8 +85,9 @@ export function MapView({ assets, selectedAsset, onSelect }: MapViewProps) {
         <Marker
           key={asset.id}
           position={[asset.lat, asset.lng]}
-          icon={createMarkerIcon(asset)}
+          icon={createMarkerIcon(asset, asset.id === selectedAsset?.id)}
           eventHandlers={{ click: () => onSelect(asset) }}
+          zIndexOffset={asset.id === selectedAsset?.id ? 1000 : 0}
         >
           <Popup>
             <div className="text-sm min-w-[160px]">
