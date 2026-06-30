@@ -1,4 +1,5 @@
 import { Asset } from '../types';
+export { ALL_TYPES, ALL_STATUSES } from './constants';
 
 export const mockFleet: Asset[] = [
   // Ships
@@ -251,5 +252,3 @@ export const mockFleet: Asset[] = [
   },
 ];
 
-export const ALL_TYPES = ['ship', 'drone', 'airplane'] as const;
-export const ALL_STATUSES = ['active', 'idle', 'maintenance', 'offline'] as const;

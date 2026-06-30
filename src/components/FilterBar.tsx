@@ -1,5 +1,5 @@
 import { AssetType, AssetStatus, FilterState } from '../types';
-import { ALL_TYPES, ALL_STATUSES } from '../data/mockFleet';
+import { ALL_TYPES, ALL_STATUSES } from '../data/constants';
 
 const TYPE_LABELS: Record<AssetType, string> = {
   ship: '🚢 Ships',
