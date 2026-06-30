@@ -62,6 +62,7 @@ export default function App() {
         onChange={setFilters}
         totalCount={mockFleet.length}
         filteredCount={filteredAssets.length}
+        allAssets={mockFleet}
       />
 
       {/* Main content */}
