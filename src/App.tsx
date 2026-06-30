@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Asset, FilterState } from './types';
-import { mockFleet, ALL_TYPES, ALL_STATUSES } from './data/mockFleet';
+import { ALL_TYPES, ALL_STATUSES } from './data/mockFleet';
+import { SCENARIOS, DEFAULT_SCENARIO_ID } from './data/scenarios';
 import { FilterBar } from './components/FilterBar';
 import { AssetList } from './components/AssetList';
 import { MapView } from './components/MapView';
 import { StatsBar } from './components/StatsBar';
+import { ScenarioSelector } from './components/ScenarioSelector';
 
 const DEFAULT_FILTERS: FilterState = {
   types: [...ALL_TYPES],
@@ -15,13 +17,26 @@ export default function App() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [view, setView] = useState<'split' | 'map' | 'list'>('split');
+  const [scenarioId, setScenarioId] = useState<string>(DEFAULT_SCENARIO_ID);
+
+  const activeScenario = useMemo(
+    () => SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0],
+    [scenarioId]
+  );
+  const activeFleet = activeScenario.assets;
+
+  function handleScenarioChange(id: string) {
+    setScenarioId(id);
+    setSelectedAsset(null);
+    setFilters(DEFAULT_FILTERS);
+  }
 
   const filteredAssets = useMemo(
     () =>
-      mockFleet.filter(
+      activeFleet.filter(
         (a) => filters.types.includes(a.type) && filters.statuses.includes(a.status)
       ),
-    [filters]
+    [activeFleet, filters]
   );
 
   function handleSelectAsset(asset: Asset) {
@@ -37,7 +52,13 @@ export default function App() {
           <span className="text-gray-400 text-sm hidden sm:block">Real-time asset monitoring</span>
         </div>
         <div className="flex items-center gap-4">
-          <StatsBar allAssets={mockFleet} />
+          <ScenarioSelector
+            scenarios={SCENARIOS}
+            activeId={scenarioId}
+            onChange={handleScenarioChange}
+          />
+          <div className="h-5 w-px bg-gray-600" />
+          <StatsBar allAssets={activeFleet} />
           <div className="h-5 w-px bg-gray-600" />
           {/* View toggle */}
           <div className="flex rounded-lg overflow-hidden border border-gray-600">
@@ -60,7 +81,7 @@ export default function App() {
       <FilterBar
         filters={filters}
         onChange={setFilters}
-        totalCount={mockFleet.length}
+        totalCount={activeFleet.length}
         filteredCount={filteredAssets.length}
       />
 
