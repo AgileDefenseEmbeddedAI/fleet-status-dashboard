@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Asset, FilterState } from './types';
 import { mockFleet, ALL_TYPES, ALL_STATUSES } from './data/mockFleet';
 import { FilterBar } from './components/FilterBar';
@@ -14,7 +14,14 @@ const DEFAULT_FILTERS: FilterState = {
 export default function App() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [view, setView] = useState<'split' | 'map' | 'list'>('split');
+  const [view, setView] = useState<'split' | 'map' | 'list'>(() => {
+    const saved = localStorage.getItem('fleetView');
+    return (saved === 'map' || saved === 'list' || saved === 'split') ? saved : 'split';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fleetView', view);
+  }, [view]);
 
   const filteredAssets = useMemo(
     () =>
